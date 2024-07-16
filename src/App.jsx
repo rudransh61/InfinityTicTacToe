@@ -7,9 +7,11 @@ const App = () => {
   const [board, setBoard] = useState(initialBoard);
   const [isXNext, setIsXNext] = useState(true);
   const [moves, setMoves] = useState([]);
-  
+  const [isComputer, setIsComputer] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
+
   const handleClick = (index) => {
-    if (board[index] || calculateWinner(board)) return;
+    if (board[index] || calculateWinner(board) || (isComputer && !isXNext)) return;
 
     const newBoard = board.slice();
     newBoard[index] = isXNext ? 'X' : 'O';
@@ -22,7 +24,17 @@ const App = () => {
     setBoard(initialBoard);
     setIsXNext(true);
     setMoves([]);
+    setGameStarted(false);
   };
+
+  useEffect(() => {
+    if (isComputer && !isXNext && !calculateWinner(board)) {
+      const timer = setTimeout(() => {
+        botMove();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isXNext, board, isComputer]);
 
   useEffect(() => {
     if (moves.length > 7) {
@@ -43,6 +55,21 @@ const App = () => {
     }
   }, [moves, board]);
 
+  const botMove = () => {
+    const availableMoves = board
+      .map((val, idx) => (val === null ? idx : null))
+      .filter((val) => val !== null);
+
+    if (availableMoves.length === 0) return;
+
+    const randomMove = availableMoves[Math.floor(Math.random() * availableMoves.length)];
+    const newBoard = board.slice();
+    newBoard[randomMove] = 'O';
+    setBoard(newBoard);
+    setIsXNext(true);
+    setMoves([...moves, randomMove]);
+  };
+
   const winner = calculateWinner(board);
   let status;
   if (winner) {
@@ -52,21 +79,51 @@ const App = () => {
     status = 'Turn: ' + (isXNext ? 'X' : 'O');
   }
 
+  const startGame = (mode) => {
+    setIsComputer(mode === 'computer');
+    setGameStarted(true);
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600 font-comicsans">
       <h1 className="text-5xl font-bold text-white mb-8">Infinity TicTacToe</h1>
-      <div className="grid grid-cols-3 gap-4">
-        {board.map((value, index) => (
+      {!gameStarted ? (
+        <div className="flex flex-col items-center">
           <button
-            key={index}
-            className="w-24 h-24 text-4xl font-bold flex items-center justify-center bg-white rounded-lg shadow-md hover:bg-gray-200 transition-colors duration-200 border-4 border-black"
-            onClick={() => handleClick(index)}
+            className="mb-4 w-48 h-16 text-2xl font-bold bg-white rounded-lg shadow-md hover:bg-gray-200 transition-colors duration-200 border-4 border-black"
+            onClick={() => startGame('computer')}
           >
-            {value}
+            Play Against Computer
           </button>
-        ))}
-      </div>
-      <div className="mt-8 text-2xl text-white">{status}</div>
+          <button
+            className="w-48 h-16 text-2xl font-bold bg-white rounded-lg shadow-md hover:bg-gray-200 transition-colors duration-200 border-4 border-black"
+            onClick={() => startGame('player')}
+          >
+            Play Against Player
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-4">
+            {board.map((value, index) => (
+              <button
+                key={index}
+                className="w-24 h-24 text-4xl font-bold flex items-center justify-center bg-white rounded-lg shadow-md hover:bg-gray-200 transition-colors duration-200 border-4 border-black"
+                onClick={() => handleClick(index)}
+              >
+                {value}
+              </button>
+            ))}
+          </div>
+          <div className="mt-8 text-2xl text-white">{status}</div>
+          <button
+            className="mt-4 w-48 h-16 text-2xl font-bold bg-white rounded-lg shadow-md hover:bg-gray-200 transition-colors duration-200 border-4 border-black"
+            onClick={startAgain}
+          >
+            Start Again
+          </button>
+        </>
+      )}
     </div>
   );
 };
