@@ -56,19 +56,63 @@ const App = () => {
   }, [moves, board]);
 
   const botMove = () => {
-    const availableMoves = board
-      .map((val, idx) => (val === null ? idx : null))
-      .filter((val) => val !== null);
-
-    if (availableMoves.length === 0) return;
-
-    const randomMove = availableMoves[Math.floor(Math.random() * availableMoves.length)];
     const newBoard = board.slice();
-    newBoard[randomMove] = 'O';
-    setBoard(newBoard);
-    setIsXNext(true);
-    setMoves([...moves, randomMove]);
+    const bestMove = findBestMove(newBoard);
+    if (bestMove !== -1) {
+      newBoard[bestMove] = 'O';
+      setBoard(newBoard);
+      setIsXNext(true);
+      setMoves([...moves, bestMove]);
+    }
   };
+  
+  const findBestMove = (board) => {
+    let bestVal = -Infinity;
+    let bestMove = -1;
+  
+    for (let i = 0; i < board.length; i++) {
+      if (board[i] === null) {
+        board[i] = 'O';
+        let moveVal = minimax(board, 0, false);
+        board[i] = null;
+        if (moveVal > bestVal) {
+          bestMove = i;
+          bestVal = moveVal;
+        }
+      }
+    }
+    return bestMove;
+  };
+  
+  const minimax = (board, depth, isMax) => {
+    const winner = calculateWinner(board);
+    if (winner === 'O') return 10 - depth;
+    if (winner === 'X') return depth - 10;
+    if (board.every(cell => cell !== null)) return 0;
+  
+    if (isMax) {
+      let best = -Infinity;
+      for (let i = 0; i < board.length; i++) {
+        if (board[i] === null) {
+          board[i] = 'O';
+          best = Math.max(best, minimax(board, depth + 1, false));
+          board[i] = null;
+        }
+      }
+      return best;
+    } else {
+      let best = Infinity;
+      for (let i = 0; i < board.length; i++) {
+        if (board[i] === null) {
+          board[i] = 'X';
+          best = Math.min(best, minimax(board, depth + 1, true));
+          board[i] = null;
+        }
+      }
+      return best;
+    }
+  };
+  
 
   const winner = calculateWinner(board);
   let status;
